@@ -837,6 +837,42 @@ impl<Z: Zip> EpubBuilder<Z> {
             ));
         }
 
+        // Add accessibility metadata
+        for access_mode in &self.metadata.accessibility_metadata.access_modes {
+            optional.push(format!(
+                "<meta name=\"schema:accessMode\" content=\"{}\"/>",
+                common::encode_html(&access_mode.to_string(), self.escape_html),
+            ));
+        }
+
+        for hazard in &self.metadata.accessibility_metadata.accessibility_hazards {
+            optional.push(format!(
+                "<meta name=\"schema:accessibilityHazard\" content=\"{}\"/>",
+                common::encode_html(&hazard.to_string(), self.escape_html),
+            ));
+        }
+
+        for sufficient in &self.metadata.accessibility_metadata.access_mode_sufficient {
+            optional.push(format!(
+                "<meta name=\"schema:accessModeSufficient\" content=\"{}\"/>",
+                common::encode_html(&sufficient.to_string(), self.escape_html),
+            ));
+        }
+
+        for feature in &self.metadata.accessibility_metadata.accessibility_features {
+            optional.push(format!(
+                "<meta name=\"schema:accessibilityFeature\" content=\"{}\"/>",
+                common::encode_html(&feature.to_string(), self.escape_html),
+            ));
+        }
+
+        if let Some(ref summary) = self.metadata.accessibility_metadata.accessibility_summary {
+            optional.push(format!(
+                "<meta name=\"schema:accessibilitySummary\" content=\"{}\"/>",
+                common::encode_html(summary, self.escape_html),
+            ));
+        }
+
         let date_modified = self
             .metadata
             .date_modified
