@@ -2,18 +2,27 @@
 <package version="2.0" xmlns="http://www.idpf.org/2007/opf" unique-identifier="epub-id-1">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/"
             xmlns:opf="http://www.idpf.org/2007/opf">
-    <dc:identifier id="epub-id-1">{{uuid}}</dc:identifier>
-    <dc:title>{{title}}</dc:title>
-    {% if date_published %}
-    <dc:date>{{date_published}}</dc:date>
-    {% endif %}
-    <dc:language>{{lang}}</dc:language>
-    {% if author %}
-    {% for a in author %}
-    <dc:creator opf:role="aut">{{a.name}}</dc:creator>
-    {% endfor %}
-    {% endif %}
-{{optional}}
+    <dc:identifier id="epub-id-1">{{uuid}}</dc:identifier>{% if publisher %}
+    <dc:publisher>{{publisher}}</dc:publisher>{% endif %}
+    <dc:title id="title">{{title}}</dc:title>{% if date_published %}
+    <dc:date>{{date_published}}</dc:date>{% endif %}{% if isbn %}
+    <dc:identifier id="pub-id" opf:scheme="ISBN">isbn</dc:identifier>{% endif %}
+    <dc:language>{{lang}}</dc:language>{% if author %}{% for a in author %}
+    <dc:creator opf:file-as="{{a.name_last_first}}" opf:role="aut">{{a.name}}</dc:creator>{% endfor %}{% endif %}
+    <meta name="schema:accessMode" content="visual" />
+    <meta name="schema:accessMode" content="textual" />
+    <meta name="schema:accessibilityHazard" content="none" />
+    <meta name="schema:accessModeSufficient" content="textual" />
+    <meta name="schema:accessModeSufficient" content="textual,visual" />
+    <meta name="schema:accessibilityFeature" content="structuralNavigation" />
+    <meta name="schema:accessibilityFeature" content="tableOfContents" />
+    <meta name="schema:accessibilityFeature" content="readingOrder" />
+    <meta name="schema:accessibilityFeature" content="alternativeText" />
+    <meta name="schema:accessibilitySummary" content="The structure and markup of this publication follow WCAG guidelines. Images used in this publication have not been verified to follow these guidelines. Images integral to the content include alternate text descriptions. This summary has been automatically generated based on the content of this publication." />
+{{optional}}{% if generator_attr %}
+    <meta name="generator" content="{{generator_attr}}" />{% endif %}
+    <meta name="lacuna-version" content="3.5.4" />
+    <meta name="lacuna-target-platform" content="Generic" />
   </metadata>
   <manifest>
     <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>

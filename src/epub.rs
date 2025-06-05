@@ -38,25 +38,27 @@ pub enum PageDirection {
     Rtl,
 }
 
-
 /// Represents the EPUB `<meta>` content inside `content.opf` file.
 ///
 /// <meta name="" content="">
-/// 
+///
 #[derive(Debug)]
 pub struct MetadataOpf {
     /// Name of the `<meta>` tag
     pub name: String,
     /// Content of the `<meta>` tag
-    pub content: String
+    pub content: String,
 }
 
 impl MetadataOpf {
     /// Create new instance
-    /// 
-    /// 
+    ///
+    ///
     pub fn new(&self, meta_name: String, meta_content: String) -> Self {
-        Self { name: meta_name, content: meta_content }
+        Self {
+            name: meta_name,
+            content: meta_content,
+        }
     }
 }
 
@@ -82,11 +84,38 @@ impl FromStr for PageDirection {
     }
 }
 
+/// Represents an author of the EPUB book.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Author {
+    /// Name of the author
+    pub name: String,
+    /// Name of the author in last, first format
+    pub name_last_first: String,
+}
+
+impl Author {
+    /// Create a new author
+    ///
+    /// # Arguments
+    ///
+    /// * `name`: the name of the author, e.g. "John Doe"
+    pub fn new<S: Into<String>>(name: S, name_last_first: S) -> Self {
+        let name = name.into();
+        let name_last_first = name_last_first.into();
+        Author {
+            name,
+            name_last_first,
+        }
+    }
+}
+
 /// EPUB Metadata
 #[derive(Debug)]
 pub struct Metadata {
     pub title: String,
-    pub author: Vec<String>,
+    pub author: Vec<Author>,
+    pub publisher: Option<String>,
+    pub isbn: Option<String>,
     pub lang: String,
     pub direction: PageDirection,
     pub generator: String,
@@ -104,6 +133,8 @@ impl Default for Metadata {
         Self {
             title: String::new(),
             author: vec![],
+            publisher: None,
+            isbn: None,
             lang: String::from("en"),
             direction: PageDirection::default(),
             generator: String::from("Rust EPUB library"),
@@ -167,7 +198,7 @@ impl Content {
 #[derive(Debug)]
 pub struct EpubBuilder<Z: Zip> {
     version: EpubVersion,
-    direction: PageDirection,    
+    direction: PageDirection,
     zip: Z,
     files: Vec<Content>,
     metadata: Metadata,
@@ -175,7 +206,7 @@ pub struct EpubBuilder<Z: Zip> {
     stylesheet: bool,
     inline_toc: bool,
     escape_html: bool,
-    meta_opf: Vec<MetadataOpf>
+    meta_opf: Vec<MetadataOpf>,
 }
 
 impl<Z: Zip> EpubBuilder<Z> {
@@ -191,7 +222,7 @@ impl<Z: Zip> EpubBuilder<Z> {
             stylesheet: false,
             inline_toc: false,
             escape_html: true,
-            meta_opf: Vec::new()
+            meta_opf: Vec::new(),
         };
 
         epub.zip
@@ -214,25 +245,24 @@ impl<Z: Zip> EpubBuilder<Z> {
         self.version = version;
         self
     }
-    
+
     /// Set EPUB Direction (default: Ltr)
     ///
-    /// * `Ltr`: Left-To-Right 
-    /// * `Rtl`: Right-To-Left 
-    /// 
-    /// 
+    /// * `Ltr`: Left-To-Right
+    /// * `Rtl`: Right-To-Left
+    ///
+    ///
     pub fn epub_direction(&mut self, direction: PageDirection) -> &mut Self {
         self.direction = direction;
         self
     }
-    
 
     /// Add custom <meta> to `content.opf`
     /// Syntax: `self.add_metadata_opf(name, content)`
-    /// 
+    ///
     /// ### Example
     /// If you wanna add `<meta name="primary-writing-mode" content="vertical-rl"/>` into `content.opf`
-    /// 
+    ///
     /// ```rust
     /// use epub_builder::EpubBuilder;
     /// use epub_builder::ZipCommand;
@@ -244,7 +274,7 @@ impl<Z: Zip> EpubBuilder<Z> {
     ///     content: String::from("vertical-rl")
     /// });
     /// ```
-    /// 
+    ///
     pub fn add_metadata_opf(&mut self, item: MetadataOpf) -> &mut Self {
         self.meta_opf.push(item);
         self
@@ -274,14 +304,6 @@ impl<Z: Zip> EpubBuilder<Z> {
         S2: Into<String>,
     {
         match key.as_ref() {
-            "author" => {
-                let value = value.into();
-                if value.is_empty() {
-                    self.metadata.author = vec![];
-                } else {
-                    self.metadata.author.push(value);
-                }
-            }
             "title" => self.metadata.title = value.into(),
             "lang" => self.metadata.lang = value.into(),
             "direction" => self.metadata.direction = PageDirection::from_str(&value.into())?,
@@ -309,14 +331,26 @@ impl<Z: Zip> EpubBuilder<Z> {
         Ok(self)
     }
 
+    /// Sets the Publisher of the EPUB
+    pub fn set_publisher<S: Into<String>>(&mut self, value: S) {
+        self.metadata.publisher = Some(value.into());
+    }
+
+    /// Sets the Publisher of the EPUB
+    pub fn publisher<S: Into<String>>(&mut self, value: S) -> Result<&mut Self> {
+        self.metadata.publisher = Some(value.into());
+        Ok(self)
+    }
+
     /// Sets the authors of the EPUB
-    pub fn set_authors(&mut self, value: Vec<String>) {
+    pub fn set_authors(&mut self, value: Vec<Author>) {
         self.metadata.author = value;
     }
 
     /// Add an author to the EPUB
-    pub fn add_author<S: Into<String>>(&mut self, value: S) {
+    pub fn add_author<S: Into<Author>>(&mut self, value: S) -> Result<&mut Self> {
         self.metadata.author.push(value.into());
+        Ok(self)
     }
 
     /// Remove all authors from EPUB
@@ -612,9 +646,9 @@ impl<Z: Zip> EpubBuilder<Z> {
                 common::encode_html(rights, self.escape_html),
             ));
         }
-        for meta in &self.meta_opf{
+        for meta in &self.meta_opf {
             optional.push(format!(
-                "<meta name=\"{}\" content=\"{}\"/>", 
+                "<meta name=\"{}\" content=\"{}\"/>",
                 common::encode_html(&meta.name, self.escape_html),
                 common::encode_html(&meta.content, self.escape_html),
             ));
@@ -702,13 +736,22 @@ impl<Z: Zip> EpubBuilder<Z> {
             for (i, author) in self.metadata.author.iter().enumerate() {
                 let author = upon::value! {
                     id_attr: html_escape::encode_double_quoted_attribute(&i.to_string()),
-                    name: common::encode_html(author, self.escape_html)
+                    name: common::encode_html(author.name.as_str(), self.escape_html),
+                    name_last_first: common::encode_html(author.name_last_first.as_str(), self.escape_html)
                 };
                 authors.push(author);
             }
             upon::value! {
                 author: authors,
                 lang: html_escape::encode_text(&self.metadata.lang),
+                isbn: common::encode_html(
+                    self.metadata.isbn.as_deref().unwrap_or(""),
+                    self.escape_html,
+                ),
+                publisher: common::encode_html(
+                    self.metadata.publisher.as_deref().unwrap_or(""),
+                    self.escape_html,
+                ),
                 direction: self.metadata.direction.to_string(),
                 title: common::encode_html(&self.metadata.title, self.escape_html),
                 generator_attr: html_escape::encode_double_quoted_attribute(&self.metadata.generator),
@@ -726,8 +769,12 @@ impl<Z: Zip> EpubBuilder<Z> {
 
         let mut res: Vec<u8> = vec![];
         match self.version {
-            EpubVersion::V20 => templates::v2::CONTENT_OPF.render(&Engine::new(), &data).to_writer(&mut res),
-            EpubVersion::V30 => templates::v3::CONTENT_OPF.render(&Engine::new(), &data).to_writer(&mut res),
+            EpubVersion::V20 => templates::v2::CONTENT_OPF
+                .render(&Engine::new(), &data)
+                .to_writer(&mut res),
+            EpubVersion::V30 => templates::v3::CONTENT_OPF
+                .render(&Engine::new(), &data)
+                .to_writer(&mut res),
         }
         .map_err(|e| crate::Error::TemplateError {
             msg: "could not render template for content.opf".to_string(),
@@ -818,8 +865,12 @@ impl<Z: Zip> EpubBuilder<Z> {
 
         let mut res: Vec<u8> = vec![];
         match self.version {
-            EpubVersion::V20 => templates::v2::NAV_XHTML.render(&Engine::new(), &data).to_writer(&mut res),
-            EpubVersion::V30 => templates::v3::NAV_XHTML.render(&Engine::new(), &data).to_writer(&mut res),
+            EpubVersion::V20 => templates::v2::NAV_XHTML
+                .render(&Engine::new(), &data)
+                .to_writer(&mut res),
+            EpubVersion::V30 => templates::v3::NAV_XHTML
+                .render(&Engine::new(), &data)
+                .to_writer(&mut res),
         }
         .map_err(|e| crate::Error::TemplateError {
             msg: "error rendering nav.xhtml template".to_string(),

@@ -25,10 +25,10 @@
 //! use epub_builder::Result;
 //! use epub_builder::TocElement;
 //! use epub_builder::ZipLibrary;
-//! 
+//!
 //! use std::io;
 //! use std::io::Write;
-//! 
+//!
 //! // Try to print Zip file to stdout
 //! fn run() -> Result<()> {
 //!     env_logger::init();
@@ -41,7 +41,7 @@
 //! </html>"#;
 //!     let dummy_image = "Not really a PNG image";
 //!     let dummy_css = "body { background-color: pink }";
-//! 
+//!
 //!     // Create a new EpubBuilder using the zip library
 //!     let mut builder = EpubBuilder::new(ZipLibrary::new()?)?;
 //!     // Set some metadata
@@ -90,11 +90,11 @@
 //!         .inline_toc();
 //!     // Finally, write the EPUB file to stdout
 //!     builder.generate(&mut io::stdout())?; // generate into stout
-//! 
+//!
 //!     log::debug!("dummy book generation is done");
 //!     Ok(())
 //! }
-//! 
+//!
 //! fn main() {
 //!     match run() {
 //!         Ok(_) => writeln!(
@@ -167,6 +167,7 @@ mod zip_command_or_library;
 #[cfg(feature = "libzip")]
 mod zip_library;
 
+pub use epub::Author;
 pub use epub::EpubBuilder;
 pub use epub::EpubVersion;
 pub use epub::MetadataOpf;
