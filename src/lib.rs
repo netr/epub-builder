@@ -172,6 +172,12 @@ pub use epub::EpubBuilder;
 pub use epub::EpubVersion;
 pub use epub::MetadataOpf;
 pub use epub::PageDirection;
+// Accessibility types
+pub use epub::AccessMode;
+pub use epub::AccessibilityFeature;
+pub use epub::AccessibilityHazard;
+pub use epub::AccessibilityMetadata;
+pub use epub::AccessModeSufficient;
 pub use epub_content::EpubContent;
 pub use epub_content::ReferenceType;
 use libzip::result::ZipError;

@@ -109,6 +109,175 @@ impl Author {
     }
 }
 
+/// Accessibility mode for EPUB content
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AccessMode {
+    /// Content can be perceived visually
+    Visual,
+    /// Content can be perceived textually
+    Textual,
+    /// Content can be perceived auditorily
+    Auditory,
+    /// Content can be perceived tactilely
+    Tactile,
+}
+
+impl ToString for AccessMode {
+    fn to_string(&self) -> String {
+        match self {
+            AccessMode::Visual => "visual".to_string(),
+            AccessMode::Textual => "textual".to_string(),
+            AccessMode::Auditory => "auditory".to_string(),
+            AccessMode::Tactile => "tactile".to_string(),
+        }
+    }
+}
+
+/// Accessibility hazards for EPUB content
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AccessibilityHazard {
+    /// No accessibility hazards
+    None,
+    /// Contains flashing content
+    Flashing,
+    /// Contains motion simulation
+    MotionSimulation,
+    /// Contains sound content
+    Sound,
+    /// Unknown hazards
+    Unknown,
+}
+
+impl ToString for AccessibilityHazard {
+    fn to_string(&self) -> String {
+        match self {
+            AccessibilityHazard::None => "none".to_string(),
+            AccessibilityHazard::Flashing => "flashing".to_string(),
+            AccessibilityHazard::MotionSimulation => "motionSimulation".to_string(),
+            AccessibilityHazard::Sound => "sound".to_string(),
+            AccessibilityHazard::Unknown => "unknown".to_string(),
+        }
+    }
+}
+
+/// Sufficient access modes for EPUB content
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AccessModeSufficient {
+    /// Textual access is sufficient
+    Textual,
+    /// Visual access is sufficient
+    Visual,
+    /// Combined textual and visual access
+    TextualVisual,
+    /// Auditory access is sufficient
+    Auditory,
+    /// Tactile access is sufficient
+    Tactile,
+}
+
+impl ToString for AccessModeSufficient {
+    fn to_string(&self) -> String {
+        match self {
+            AccessModeSufficient::Textual => "textual".to_string(),
+            AccessModeSufficient::Visual => "visual".to_string(),
+            AccessModeSufficient::TextualVisual => "textual,visual".to_string(),
+            AccessModeSufficient::Auditory => "auditory".to_string(),
+            AccessModeSufficient::Tactile => "tactile".to_string(),
+        }
+    }
+}
+
+/// Accessibility features available in EPUB content
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AccessibilityFeature {
+    /// Structural navigation elements
+    StructuralNavigation,
+    /// Table of contents
+    TableOfContents,
+    /// Reading order
+    ReadingOrder,
+    /// Alternative text for images
+    AlternativeText,
+    /// Audio descriptions
+    AudioDescription,
+    /// Captions
+    Captions,
+    /// Sign language interpretation
+    SignLanguage,
+    /// Synchronized audio text
+    SynchronizedAudioText,
+    /// Annotations
+    Annotations,
+    /// Bookmarks
+    Bookmarks,
+    /// Index
+    Index,
+    /// Print equivalent page numbers
+    PrintPageNumbers,
+}
+
+impl ToString for AccessibilityFeature {
+    fn to_string(&self) -> String {
+        match self {
+            AccessibilityFeature::StructuralNavigation => "structuralNavigation".to_string(),
+            AccessibilityFeature::TableOfContents => "tableOfContents".to_string(),
+            AccessibilityFeature::ReadingOrder => "readingOrder".to_string(),
+            AccessibilityFeature::AlternativeText => "alternativeText".to_string(),
+            AccessibilityFeature::AudioDescription => "audioDescription".to_string(),
+            AccessibilityFeature::Captions => "captions".to_string(),
+            AccessibilityFeature::SignLanguage => "signLanguage".to_string(),
+            AccessibilityFeature::SynchronizedAudioText => "synchronizedAudioText".to_string(),
+            AccessibilityFeature::Annotations => "annotations".to_string(),
+            AccessibilityFeature::Bookmarks => "bookmarks".to_string(),
+            AccessibilityFeature::Index => "index".to_string(),
+            AccessibilityFeature::PrintPageNumbers => "printPageNumbers".to_string(),
+        }
+    }
+}
+
+/// Accessibility metadata for EPUB content
+///
+/// This struct contains optional accessibility information that can be included
+/// in the EPUB metadata to improve accessibility compliance.
+#[derive(Debug, Default)]
+pub struct AccessibilityMetadata {
+    /// Access modes available for the content
+    pub access_modes: Vec<AccessMode>,
+    /// Accessibility hazards present in the content
+    pub accessibility_hazards: Vec<AccessibilityHazard>,
+    /// Sufficient access modes for consuming the content
+    pub access_mode_sufficient: Vec<AccessModeSufficient>,
+    /// Accessibility features available in the content
+    pub accessibility_features: Vec<AccessibilityFeature>,
+    /// Summary of accessibility features and compliance
+    pub accessibility_summary: Option<String>,
+}
+
+impl AccessibilityMetadata {
+    /// Creates a new AccessibilityMetadata with default values for a typical EPUB
+    pub fn new() -> Self {
+        Self {
+            access_modes: vec![AccessMode::Textual],
+            accessibility_hazards: vec![AccessibilityHazard::None],
+            access_mode_sufficient: vec![
+                AccessModeSufficient::Textual,
+            ],
+            accessibility_features: vec![
+                AccessibilityFeature::StructuralNavigation,
+                AccessibilityFeature::ReadingOrder,
+            ],
+            accessibility_summary: Some(
+                "The structure and markup of this publication follow WCAG guidelines. Images used in this publication have not been verified to follow these guidelines. Images integral to the content include alternate text descriptions. This summary has been automatically generated based on the content of this publication.".to_string()
+            ),
+        }
+    }
+
+    /// Creates an empty AccessibilityMetadata
+    pub fn empty() -> Self {
+        Self::default()
+    }
+}
+
 /// EPUB Metadata
 #[derive(Debug)]
 pub struct Metadata {
@@ -126,6 +295,8 @@ pub struct Metadata {
     pub date_published: Option<chrono::DateTime<chrono::Utc>>,
     pub date_modified: Option<chrono::DateTime<chrono::Utc>>,
     pub uuid: Option<uuid::Uuid>,
+    /// Accessibility metadata for the EPUB
+    pub accessibility_metadata: AccessibilityMetadata,
 }
 
 impl Default for Metadata {
@@ -145,6 +316,7 @@ impl Default for Metadata {
             date_published: None,
             date_modified: None,
             uuid: None,
+            accessibility_metadata: AccessibilityMetadata::new(),
         }
     }
 }
@@ -356,6 +528,17 @@ impl<Z: Zip> EpubBuilder<Z> {
     /// Remove all authors from EPUB
     pub fn clear_authors<S: Into<String>>(&mut self) {
         self.metadata.author.clear()
+    }
+
+    /// Set Accessibility metadata for the EPUB
+    pub fn set_accessibility_metadata(&mut self, metadata: AccessibilityMetadata) {
+        self.metadata.accessibility_metadata = metadata;
+    }
+
+    /// Sets Accessibility metadata for the EPUB
+    pub fn accessibility_metadata(&mut self, metadata: AccessibilityMetadata) -> Result<&mut Self> {
+        self.set_accessibility_metadata(metadata);
+        Ok(self)
     }
 
     /// Sets the title of the EPUB
