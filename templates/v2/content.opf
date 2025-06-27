@@ -6,13 +6,13 @@
     <dc:publisher>{{publisher}}</dc:publisher>{% endif %}
     <dc:title id="title">{{title}}</dc:title>{% if date_published %}
     <dc:date>{{date_published}}</dc:date>{% endif %}{% if isbn %}
-    <dc:identifier id="pub-id" opf:scheme="ISBN">isbn</dc:identifier>{% endif %}
+    <dc:identifier id="pub-id" opf:scheme="ISBN">{{isbn}}</dc:identifier>{% endif %}
     <dc:language>{{lang}}</dc:language>{% if author %}{% for a in author %}
     <dc:creator opf:file-as="{{a.name_last_first}}" opf:role="aut">{{a.name}}</dc:creator>{% endfor %}{% endif %}
 {{optional}}{% if generator_attr %}
-    <meta name="generator" content="{{generator_attr}}" />{% endif %}
-    <meta name="lacuna-version" content="3.5.4" />
-    <meta name="lacuna-target-platform" content="Generic" />
+    <meta name="generator" content="{{generator_attr}}" />{% endif %}{% if lacuna_version %}
+    <meta name="lacuna-version" content="{{lacuna_version}}" />{% endif %}{% if lacuna_target_platform %}
+    <meta name="lacuna-target-platform" content="{{lacuna_target_platform}}" />{% endif %}
   </metadata>
   <manifest>
     <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>

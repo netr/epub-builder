@@ -295,6 +295,8 @@ pub struct Metadata {
     pub date_published: Option<chrono::DateTime<chrono::Utc>>,
     pub date_modified: Option<chrono::DateTime<chrono::Utc>>,
     pub uuid: Option<uuid::Uuid>,
+    pub lacuna_version: Option<String>,
+    pub lacuna_target_platform: Option<String>,
     /// Accessibility metadata for the EPUB
     pub accessibility_metadata: AccessibilityMetadata,
 }
@@ -316,6 +318,8 @@ impl Default for Metadata {
             date_published: None,
             date_modified: None,
             uuid: None,
+            lacuna_version: None,
+            lacuna_target_platform: Some("Generic".to_string()),
             accessibility_metadata: AccessibilityMetadata::new(),
         }
     }
@@ -480,6 +484,14 @@ impl<Z: Zip> EpubBuilder<Z> {
             "lang" => self.metadata.lang = value.into(),
             "direction" => self.metadata.direction = PageDirection::from_str(&value.into())?,
             "generator" => self.metadata.generator = value.into(),
+            "isbn" => {
+                let value = value.into();
+                if value.is_empty() {
+                    self.metadata.isbn = None;
+                } else {
+                    self.metadata.isbn = Some(value);
+                }
+            }
             "description" => {
                 let value = value.into();
                 if value.is_empty() {
@@ -494,6 +506,22 @@ impl<Z: Zip> EpubBuilder<Z> {
                     self.metadata.subject = vec![];
                 } else {
                     self.metadata.subject.push(value);
+                }
+            }
+            "lacuna_version" => {
+                let value = value.into();
+                if value.is_empty() {
+                    self.metadata.lacuna_version = None;
+                } else {
+                    self.metadata.lacuna_version = Some(value);
+                }
+            }
+            "lacuna_target_platform" => {
+                let value = value.into();
+                if value.is_empty() {
+                    self.metadata.lacuna_target_platform = Some("Generic".to_string());
+                } else {
+                    self.metadata.lacuna_target_platform = Some(value);
                 }
             }
             "license" => self.metadata.license = Some(value.into()),
@@ -981,6 +1009,16 @@ impl<Z: Zip> EpubBuilder<Z> {
                 itemrefs: common::indent(itemrefs.join("\n"), 2), // Not escaped: XML content
                 date_modified: html_escape::encode_text(&date_modified.to_string()),
                 uuid: html_escape::encode_text(&uuid),
+                lacuna_version: if let Some(ref version) = self.metadata.lacuna_version {
+                    common::encode_html(version, self.escape_html)
+                } else {
+                    std::borrow::Cow::Borrowed("")
+                },
+                lacuna_target_platform: if let Some(ref platform) = self.metadata.lacuna_target_platform {
+                    common::encode_html(platform, self.escape_html)
+                } else {
+                    std::borrow::Cow::Borrowed("")
+                },
                 guide: common::indent(guide.join("\n"), 2), // Not escaped: XML content
                 date_published: if let Some(date) = date_published { date.to_string() } else { String::new() },
             }

@@ -38,6 +38,9 @@ fn run() -> Result<()> {
         .add_author(Author::new("John Doe", "Doe, John"))?
         .publisher("epub-builder example")?
         .metadata("title", "Dummy Book <T>")?
+        .metadata("isbn", "2183121444100")?
+        .metadata("lacuna_version", "1.0.0")? // Set the Lacuna version
+        .metadata("lacuna_target_platform", "Kindle")? // Set the Lacuna target
         .metadata("generator", "epub-builder example")?
         // Set the stylesheet (create a "stylesheet.css" file in EPUB that is used by some generated files)
         .stylesheet(dummy_css.as_bytes())?
