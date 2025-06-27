@@ -1,3 +1,4 @@
+use epub_builder::Author;
 use epub_builder::EpubBuilder;
 use epub_builder::EpubContent;
 use epub_builder::ReferenceType;
@@ -33,7 +34,8 @@ fn run() -> Result<()> {
     let mut builder = EpubBuilder::new(ZipLibrary::new()?)?;
 
     // Set some metadata
-    builder.add_author("Joan Doe");
+    builder.add_author(Author::new("John Doe", "Doe, John"))?;
+    builder.set_publisher("epub-builder example");
     builder.set_title("Dummy Book <T>");
 
     // Set the stylesheet (create a "stylesheet.css" file in EPUB that is used by some generated files)

@@ -1,3 +1,4 @@
+use epub_builder::Author;
 use epub_builder::EpubBuilder;
 use epub_builder::EpubContent;
 use epub_builder::ReferenceType;
@@ -5,12 +6,21 @@ use epub_builder::Result;
 use epub_builder::TocElement;
 use epub_builder::ZipLibrary;
 
+use std::env;
+use std::fs::File;
 use std::io;
 use std::io::Write;
 
 // Try to print Zip file to stdout
 fn run() -> Result<()> {
     env_logger::init();
+
+    // temp file to see epub internals
+    let _curr_dir = env::current_dir().unwrap();
+    let _out_file = _curr_dir.join("temp_epub_file.epub");
+    log::debug!("file to write = {}", &_out_file.display());
+    let _writer = File::create(_out_file).unwrap();
+
     // Some dummy content to fill our books
     let dummy_content = r#"<?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
@@ -25,8 +35,10 @@ fn run() -> Result<()> {
     let mut builder = EpubBuilder::new(ZipLibrary::new()?)?;
     // Set some metadata
     builder
-        .metadata("author", "Joan Doe")?
+        .add_author(Author::new("John Doe", "Doe, John"))?
+        .publisher("epub-builder example")?
         .metadata("title", "Dummy Book <T>")?
+        .metadata("generator", "epub-builder example")?
         // Set the stylesheet (create a "stylesheet.css" file in EPUB that is used by some generated files)
         .stylesheet(dummy_css.as_bytes())?
         // Add a image cover file
@@ -68,8 +80,9 @@ fn run() -> Result<()> {
         // Generate a toc inside of the document, that will be part of the linear structure.
         .inline_toc();
     // Finally, write the EPUB file to stdout
-    builder.generate(&mut io::stdout())?; // generate into stout
+    // builder.generate(&mut io::stdout())?; // generate into stout
 
+    builder.generate(&_writer)?; // generate into temp file to see epub internals
     log::debug!("dummy book generation is done");
     Ok(())
 }
