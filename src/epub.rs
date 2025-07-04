@@ -334,6 +334,7 @@ struct Content {
     pub cover: bool,
     pub reftype: Option<ReferenceType>,
     pub title: String,
+    pub include_in_guide: bool,
 }
 
 impl Content {
@@ -350,6 +351,7 @@ impl Content {
             cover: false,
             reftype: None,
             title: String::new(),
+            include_in_guide: true,
         }
     }
 }
@@ -790,6 +792,7 @@ impl<Z: Zip> EpubBuilder<Z> {
         let mut file = Content::new(content.toc.url.as_str(), "application/xhtml+xml");
         file.itemref = true;
         file.reftype = content.reftype;
+        file.include_in_guide = content.include_in_guide;
         if file.reftype.is_some() {
             file.title = content.toc.title.clone();
         }
@@ -948,33 +951,35 @@ impl<Z: Zip> EpubBuilder<Z> {
                 ));
             }
             if let Some(reftype) = content.reftype {
-                use crate::ReferenceType::*;
-                let reftype = match reftype {
-                    Cover => "cover",
-                    TitlePage => "title-page",
-                    Toc => "toc",
-                    Index => "index",
-                    Glossary => "glossary",
-                    Acknowledgements => "acknowledgements",
-                    Bibliography => "bibliography",
-                    Colophon => "colophon",
-                    Copyright => "copyright",
-                    Dedication => "dedication",
-                    Epigraph => "epigraph",
-                    Foreword => "foreword",
-                    Loi => "loi",
-                    Lot => "lot",
-                    Notes => "notes",
-                    Preface => "preface",
-                    Text => "text",
-                };
-                log::debug!("content = {:?}", &content);
-                guide.push(format!(
-                    "<reference type=\"{reftype}\" title=\"{title}\" href=\"{href}\"/>",
-                    reftype = html_escape::encode_double_quoted_attribute(&reftype),
-                    title = html_escape::encode_double_quoted_attribute(&content.title),
-                    href = html_escape::encode_double_quoted_attribute(&content.file),
-                ));
+                if content.include_in_guide {
+                    use crate::ReferenceType::*;
+                    let reftype = match reftype {
+                        Cover => "cover",
+                        TitlePage => "title-page",
+                        Toc => "toc",
+                        Index => "index",
+                        Glossary => "glossary",
+                        Acknowledgements => "acknowledgements",
+                        Bibliography => "bibliography",
+                        Colophon => "colophon",
+                        Copyright => "copyright",
+                        Dedication => "dedication",
+                        Epigraph => "epigraph",
+                        Foreword => "foreword",
+                        Loi => "loi",
+                        Lot => "lot",
+                        Notes => "notes",
+                        Preface => "preface",
+                        Text => "text",
+                    };
+                    log::debug!("content = {:?}", &content);
+                    guide.push(format!(
+                        "<reference type=\"{reftype}\" title=\"{title}\" href=\"{href}\"/>",
+                        reftype = html_escape::encode_double_quoted_attribute(&reftype),
+                        title = html_escape::encode_double_quoted_attribute(&content.title),
+                        href = html_escape::encode_double_quoted_attribute(&content.file),
+                    ));
+                }
             }
         }
 

@@ -58,7 +58,8 @@ fn run() -> Result<()> {
         .add_content(
             EpubContent::new("title.xhtml", dummy_content.as_bytes())
                 .title("Title <T>")
-                .reftype(ReferenceType::TitlePage),
+                .reftype(ReferenceType::TitlePage)
+                .include_in_guide(false),
         )?
         // Add a chapter, mark it as beginning of the "real content"
         .add_content(
@@ -76,7 +77,8 @@ fn run() -> Result<()> {
         .add_content(
             EpubContent::new("section.xhtml", dummy_content.as_bytes())
                 .title("Chapter 2 <T>, section 2")
-                .level(2),
+                .level(2)
+                .include_in_guide(false),
         )?
         // Add a chapter without a title, which will thus not appear in the TOC.
         .add_content(EpubContent::new("notes.xhtml", dummy_content.as_bytes()))?

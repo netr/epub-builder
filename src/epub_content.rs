@@ -79,6 +79,8 @@ pub struct EpubContent<R: Read> {
     pub content: R,
     /// Properties. See [EpubProperties](enum.EpubProperties.html)
     pub reftype: Option<ReferenceType>,
+    /// Whether to include this content in the guide section
+    pub include_in_guide: bool,
 }
 
 impl<R: Read> EpubContent<R> {
@@ -91,6 +93,7 @@ impl<R: Read> EpubContent<R> {
             content,
             toc: TocElement::new(href, ""),
             reftype: None,
+            include_in_guide: true,
         }
     }
 
@@ -143,6 +146,26 @@ impl<R: Read> EpubContent<R> {
     /// ```
     pub fn reftype(mut self, reftype: ReferenceType) -> Self {
         self.reftype = Some(reftype);
+        self
+    }
+
+    /// Sets whether this content should be included in the guide section
+    ///
+    /// Only items with a reference type can be included in the guide section.
+    /// By default, all items with reference types are included.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use epub_builder::{EpubContent, ReferenceType};
+    /// let dummy = "Should be a XHTML file";
+    /// let item = EpubContent::new("chapter.xhtml", dummy.as_bytes())
+    ///      .title("Chapter 1")
+    ///      .reftype(ReferenceType::Text)
+    ///      .include_in_guide(false);  // Don't include in guide
+    /// ```
+    pub fn include_in_guide(mut self, include: bool) -> Self {
+        self.include_in_guide = include;
         self
     }
 }
