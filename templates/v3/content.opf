@@ -8,12 +8,9 @@
     <dc:date>{{date_published}}</dc:date>
     {% endif %}
     <dc:language>{{lang}}</dc:language>
-    {% if author %}
-    {% for a in author %}
-    <dc:creator id="epub-creator-{{a.id_attr}}">{{a.name}}</dc:creator>
-    <meta refines="#epub-creator-{{a.id_attr}}" property="role" scheme="marc:relators">aut</meta>
-    {% endfor %}
-    {% endif %}
+    {% if author %}{% for a in author %}
+    <dc:creator opf:file-as="{{a.name_last_first}}" opf:role="aut">{{a.name}}</dc:creator>
+    {% endfor %}{% endif %}
     <meta property="dcterms:modified">{{date_modified}}</meta>
 {{optional}}
   </metadata>
