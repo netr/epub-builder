@@ -816,9 +816,9 @@ impl<Z: Zip> EpubBuilder<Z> {
     /// ```
     pub fn generate<W: io::Write>(mut self, to: W) -> Result<()> {
         // If no styleesheet was provided, generate a dummy one
-        if !self.stylesheet {
-            self.stylesheet(b"".as_ref())?;
-        }
+        // if !self.stylesheet {
+        //     self.stylesheet(b"".as_ref())?;
+        // }
         // Render content.opf
         let bytes = self.render_opf()?;
         self.zip.write_file("OEBPS/content.opf", &*bytes)?;
