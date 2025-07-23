@@ -826,13 +826,13 @@ impl<Z: Zip> EpubBuilder<Z> {
         let bytes = self.render_toc()?;
         self.zip.write_file("OEBPS/toc.ncx", &*bytes)?;
         // Render nav.xhtml
-        let bytes = self.render_nav(true)?;
-        self.zip.write_file("OEBPS/nav.xhtml", &*bytes)?;
-        // Write inline toc if it needs to
-        if self.inline_toc {
-            let bytes = self.render_nav(false)?;
-            self.zip.write_file("OEBPS/toc.xhtml", &*bytes)?;
-        }
+        // let bytes = self.render_nav(true)?;
+        // self.zip.write_file("OEBPS/nav.xhtml", &*bytes)?;
+        // // Write inline toc if it needs to
+        // if self.inline_toc {
+        //     let bytes = self.render_nav(false)?;
+        //     self.zip.write_file("OEBPS/toc.xhtml", &*bytes)?;
+        // }
 
         self.zip.generate(to)?;
         Ok(())
