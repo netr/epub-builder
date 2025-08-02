@@ -335,6 +335,7 @@ struct Content {
     pub reftype: Option<ReferenceType>,
     pub title: String,
     pub include_in_guide: bool,
+    pub id: Option<String>,
 }
 
 impl Content {
@@ -352,6 +353,7 @@ impl Content {
             reftype: None,
             title: String::new(),
             include_in_guide: true,
+            id: None,
         }
     }
 }
@@ -720,6 +722,50 @@ impl<Z: Zip> EpubBuilder<Z> {
         Ok(self)
     }
 
+    /// Add a resource to the EPUB file with a custom ID.
+    ///
+    /// This is similar to `add_resource`, but allows you to specify a custom ID
+    /// for the item in the manifest instead of having it auto-generated.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use epub_builder::{EpubBuilder, ZipLibrary};
+    /// # let mut builder = EpubBuilder::new(ZipLibrary::new().unwrap()).unwrap();
+    /// // Add a cover image with a specific ID
+    /// builder.add_resource_with_id("images/cover.jpg", 
+    ///                               std::io::Cursor::new(vec![]),
+    ///                               "image/jpeg",
+    ///                               "cover-image").unwrap();
+    /// // Then add the metadata to reference it
+    /// builder.custom_opf_metadata("cover", "cover-image").unwrap();
+    /// ```
+    ///
+    /// # Arguments
+    ///
+    /// * `path`: the path where this file will be written in the EPUB OEBPS structure
+    /// * `content`: the resource to include
+    /// * `mime_type`: the mime type of this file
+    /// * `id`: the custom ID to use in the manifest
+    pub fn add_resource_with_id<R, P, S, I>(&mut self, path: P, content: R, mime_type: S, id: I) -> Result<&mut Self>
+    where
+        R: Read,
+        P: AsRef<Path>,
+        S: Into<String>,
+        I: Into<String>,
+    {
+        self.zip
+            .write_file(Path::new("OEBPS").join(path.as_ref()), content)?;
+        log::debug!("Add resource with ID: {:?}", path.as_ref().display());
+        let mut file = Content::new(
+            format!("{}", path.as_ref().display()),
+            mime_type,
+        );
+        file.id = Some(id.into());
+        self.files.push(file);
+        Ok(self)
+    }
+
     /// Add a cover image to the EPUB.
     ///
     /// This works similarly to adding the image as a resource with the `add_resource`
@@ -921,7 +967,9 @@ impl<Z: Zip> EpubBuilder<Z> {
         let mut guide: Vec<String> = Vec::new();
 
         for content in &self.files {
-            let id = if content.cover {
+            let id = if let Some(ref custom_id) = content.id {
+                custom_id.clone()
+            } else if content.cover {
                 String::from("cover-image")
             } else {
                 to_id(&content.file)
@@ -931,7 +979,8 @@ impl<Z: Zip> EpubBuilder<Z> {
                 _ => "",
             };
             if content.cover {
-                optional.push("<meta name=\"cover\" content=\"cover-image\"/>".to_string());
+                optional.push(format!("<meta name=\"cover\" content=\"{}\"/>", 
+                    html_escape::encode_double_quoted_attribute(&id)));
             }
             log::debug!("id={:?}, mime={:?}", id, content.mime);
             items.push(format!(
