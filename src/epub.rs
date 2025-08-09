@@ -1154,7 +1154,9 @@ impl<Z: Zip> EpubBuilder<Z> {
                 // This preserves backwards compatibility because existing content defaults
                 // include_in_guide to true (see Content::new). Any newly created content that
                 // opts out by setting include_in_guide = false will now be skipped here.
-                if !file.include_in_guide { continue; }
+                if !file.include_in_guide {
+                    continue;
+                }
                 if let Some(ref reftype) = file.reftype {
                     use ReferenceType::*;
                     let reftype = match *reftype {
@@ -1193,6 +1195,7 @@ impl<Z: Zip> EpubBuilder<Z> {
             content: content, // Not escaped: XML content
             toc_name: common::encode_html(&self.metadata.toc_name, self.escape_html),
             generator_attr: html_escape::encode_double_quoted_attribute(&self.metadata.generator),
+            lang_attr: html_escape::encode_double_quoted_attribute(&self.metadata.lang),
             landmarks: if !landmarks.is_empty() {
                 common::indent(
                     format!(
