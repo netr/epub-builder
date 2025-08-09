@@ -9,21 +9,16 @@
     <dc:identifier id="pub-id" opf:scheme="ISBN">{{isbn}}</dc:identifier>{% endif %}
     <dc:language>{{lang}}</dc:language>{% if author %}{% for a in author %}
     <dc:creator opf:file-as="{{a.name_last_first}}" opf:role="aut">{{a.name}}</dc:creator>{% endfor %}{% endif %}
-{{optional}}{% if generator_attr %}
-    <meta name="generator" content="{{generator_attr}}" />{% endif %}{% if lacuna_version %}
-    <meta name="lacuna-version" content="{{lacuna_version}}" />{% endif %}{% if lacuna_target_platform %}
-    <meta name="lacuna-target-platform" content="{{lacuna_target_platform}}" />{% endif %}
+{{optional}}
   </metadata>
   <manifest>
     <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
-    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml"/>
 {{items}}
   </manifest>
   <spine toc="ncx">
 {{itemrefs}}
   </spine>
   <guide>
-    <reference type="toc" title="{{toc_name_attr}}" href="nav.xhtml"/>
 {{guide}}
   </guide>
 </package>
