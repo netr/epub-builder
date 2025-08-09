@@ -97,7 +97,12 @@ img {
 
     // Add cover image with alt text consideration
     // builder.add_cover_image("cover.png", dummy_image.as_bytes(), "image/png")?;
-    builder.add_resource_with_id("cover.png", dummy_image.as_bytes(), "image/png", "cover-image")?;
+    builder.add_resource_with_id(
+        "cover.png",
+        dummy_image.as_bytes(),
+        "image/png",
+        "cover-image",
+    )?;
 
     // Add the main content
     builder
