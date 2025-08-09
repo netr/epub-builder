@@ -10,14 +10,13 @@
     {% if author %}{% for a in author %}
     <dc:creator opf:file-as="{{a.name_last_first}}" opf:role="aut">{{a.name}}</dc:creator>
     {% endfor %}{% endif %}
-    <meta property="dcterms:modified">{{date_modified}}</meta>
 {{optional}}
   </metadata>
   <manifest>
     <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
 {{items}}
   </manifest>
-  <spine toc="ncx" page-progression-direction="{{direction}}">
+  <spine toc="ncx">
 {{itemrefs}}
   </spine>
   <guide>
