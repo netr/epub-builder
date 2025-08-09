@@ -1150,6 +1150,11 @@ impl<Z: Zip> EpubBuilder<Z> {
         let mut landmarks: Vec<String> = Vec::new();
         if self.version > EpubVersion::V20 {
             for file in &self.files {
+                // Only include items explicitly marked for inclusion in the guide / landmarks.
+                // This preserves backwards compatibility because existing content defaults
+                // include_in_guide to true (see Content::new). Any newly created content that
+                // opts out by setting include_in_guide = false will now be skipped here.
+                if !file.include_in_guide { continue; }
                 if let Some(ref reftype) = file.reftype {
                     use ReferenceType::*;
                     let reftype = match *reftype {
