@@ -58,6 +58,7 @@ img {
         .publisher("Accessible Publishing Co.")?
         .metadata("title", "Guide to Accessible EPUBs")?
         .metadata("generator", "epub-builder accessibility example")?
+        .epub_version(epub_builder::EpubVersion::V30)
         .stylesheet(dummy_css.as_bytes())?;
 
     // Create comprehensive accessibility metadata
@@ -109,6 +110,7 @@ img {
         .add_content(
             EpubContent::new("chapter1.xhtml", chapter_content.as_bytes())
                 .title("Chapter 1: Introduction to Accessibility")
+                .properties("boobies")
                 .reftype(ReferenceType::Text),
         )?
         // Add the image referenced in the content

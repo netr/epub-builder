@@ -81,6 +81,10 @@ pub struct EpubContent<R: Read> {
     pub reftype: Option<ReferenceType>,
     /// Whether to include this content in the guide section
     pub include_in_guide: bool,
+    /// Additional item properties written into the OPF manifest `properties` attribute
+    /// (EPUB 3.x). Example tokens: `nav`, `scripted`, `svg`, `mathml`.
+    /// Stored as a space separated string per EPUB spec (single attribute value).
+    pub properties: Option<String>,
 }
 
 impl<R: Read> EpubContent<R> {
@@ -94,6 +98,7 @@ impl<R: Read> EpubContent<R> {
             toc: TocElement::new(href, ""),
             reftype: None,
             include_in_guide: true,
+            properties: None,
         }
     }
 
@@ -166,6 +171,48 @@ impl<R: Read> EpubContent<R> {
     /// ```
     pub fn include_in_guide(mut self, include: bool) -> Self {
         self.include_in_guide = include;
+        self
+    }
+
+    /// Adds an item property token to the OPF manifest `properties` attribute (EPUB 3).
+    ///
+    /// Multiple calls append distinct tokens separated by a single space. Duplicate
+    /// tokens are ignored (token comparison is exact, case-sensitive per spec).
+    pub fn properties<S: Into<String>>(mut self, prop: S) -> Self {
+        let token = prop.into();
+        match self.properties {
+            None => self.properties = Some(token),
+            Some(ref mut existing) => {
+                let already = existing.split_whitespace().any(|t| t == token);
+                if !already {
+                    if !existing.is_empty() {
+                        existing.push(' ');
+                    }
+                    existing.push_str(&token);
+                }
+            }
+        }
+        self
+    }
+
+    /// Replaces the full properties string (space separated tokens) with the provided iterator of tokens.
+    pub fn set_properties<I, S2>(mut self, props: I) -> Self
+    where
+        I: IntoIterator<Item = S2>,
+        S2: Into<String>,
+    {
+        let mut unique: Vec<String> = Vec::new();
+        for p in props.into_iter() {
+            let p = p.into();
+            if !unique.iter().any(|u| u == &p) {
+                unique.push(p);
+            }
+        }
+        if unique.is_empty() {
+            self.properties = None;
+        } else {
+            self.properties = Some(unique.join(" "));
+        }
         self
     }
 }

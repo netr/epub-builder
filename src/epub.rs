@@ -108,8 +108,8 @@ impl Author {
         }
     }
 }
-
-/// Accessibility mode for EPUB content
+/// Accessibility access modes describing the primary sensory modalities through which
+/// the content can be perceived (as defined in schema.org / EPUB a11y metadata).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AccessMode {
     /// Content can be perceived visually
@@ -336,6 +336,7 @@ struct Content {
     pub title: String,
     pub include_in_guide: bool,
     pub id: Option<String>,
+    pub properties: Option<String>,
 }
 
 impl Content {
@@ -354,6 +355,7 @@ impl Content {
             title: String::new(),
             include_in_guide: true,
             id: None,
+            properties: None,
         }
     }
 }
@@ -733,7 +735,7 @@ impl<Z: Zip> EpubBuilder<Z> {
     /// # use epub_builder::{EpubBuilder, ZipLibrary};
     /// # let mut builder = EpubBuilder::new(ZipLibrary::new().unwrap()).unwrap();
     /// // Add a cover image with a specific ID
-    /// builder.add_resource_with_id("images/cover.jpg", 
+    /// builder.add_resource_with_id("images/cover.jpg",
     ///                               std::io::Cursor::new(vec![]),
     ///                               "image/jpeg",
     ///                               "cover-image").unwrap();
@@ -747,7 +749,13 @@ impl<Z: Zip> EpubBuilder<Z> {
     /// * `content`: the resource to include
     /// * `mime_type`: the mime type of this file
     /// * `id`: the custom ID to use in the manifest
-    pub fn add_resource_with_id<R, P, S, I>(&mut self, path: P, content: R, mime_type: S, id: I) -> Result<&mut Self>
+    pub fn add_resource_with_id<R, P, S, I>(
+        &mut self,
+        path: P,
+        content: R,
+        mime_type: S,
+        id: I,
+    ) -> Result<&mut Self>
     where
         R: Read,
         P: AsRef<Path>,
@@ -757,10 +765,7 @@ impl<Z: Zip> EpubBuilder<Z> {
         self.zip
             .write_file(Path::new("OEBPS").join(path.as_ref()), content)?;
         log::debug!("Add resource with ID: {:?}", path.as_ref().display());
-        let mut file = Content::new(
-            format!("{}", path.as_ref().display()),
-            mime_type,
-        );
+        let mut file = Content::new(format!("{}", path.as_ref().display()), mime_type);
         file.id = Some(id.into());
         self.files.push(file);
         Ok(self)
@@ -839,6 +844,7 @@ impl<Z: Zip> EpubBuilder<Z> {
         file.itemref = true;
         file.reftype = content.reftype;
         file.include_in_guide = content.include_in_guide;
+        file.properties = content.properties;
         if file.reftype.is_some() {
             file.title = content.toc.title.clone();
         }
@@ -974,13 +980,32 @@ impl<Z: Zip> EpubBuilder<Z> {
             } else {
                 to_id(&content.file)
             };
-            let properties = match (self.version, content.cover) {
-                (EpubVersion::V30, true) => "properties=\"cover-image\" ",
-                _ => "",
+            let mut properties_list: Vec<String> = Vec::new();
+            if self.version >= EpubVersion::V30 && content.cover {
+                properties_list.push("cover-image".to_string());
+            }
+            if self.version >= EpubVersion::V30 {
+                if let Some(ref props) = content.properties {
+                    for p in props.split_whitespace() {
+                        if !properties_list.iter().any(|existing| existing == p) {
+                            properties_list.push(p.to_string());
+                        }
+                    }
+                }
+            }
+            let properties = if !properties_list.is_empty() {
+                format!(
+                    "properties=\"{}\" ",
+                    html_escape::encode_double_quoted_attribute(&properties_list.join(" "))
+                )
+            } else {
+                String::new()
             };
             if content.cover {
-                optional.push(format!("<meta name=\"cover\" content=\"{}\"/>", 
-                    html_escape::encode_double_quoted_attribute(&id)));
+                optional.push(format!(
+                    "<meta name=\"cover\" content=\"{}\"/>",
+                    html_escape::encode_double_quoted_attribute(&id)
+                ));
             }
             log::debug!("id={:?}, mime={:?}", id, content.mime);
             items.push(format!(
