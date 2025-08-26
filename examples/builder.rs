@@ -1,8 +1,10 @@
 use epub_builder::Author;
 use epub_builder::EpubBuilder;
 use epub_builder::EpubContent;
+use epub_builder::EpubVersion;
 use epub_builder::ReferenceType;
 use epub_builder::Result;
+use epub_builder::Series;
 use epub_builder::TocElement;
 use epub_builder::ZipLibrary;
 
@@ -33,6 +35,8 @@ fn run() -> Result<()> {
 
     // Create a new EpubBuilder using the zip library
     let mut builder = EpubBuilder::new(ZipLibrary::new()?)?;
+    // Set EPUB version to 3.0 to test property-based series metadata
+    builder.epub_version(EpubVersion::V30);
     // Set some metadata
     builder
         .add_author(Author::new("John Doe", "Doe, John"))?
@@ -42,6 +46,8 @@ fn run() -> Result<()> {
         .metadata("lacuna_version", "1.0.0")? // Set the Lacuna version
         .metadata("lacuna_target_platform", "Kindle")? // Set the Lacuna target
         .metadata("generator", "epub-builder example")?
+        // Set series information
+        .series(Series::new("A Riley Thomas Mystery", 2))?
         // Set the stylesheet (create a "stylesheet.css" file in EPUB that is used by some generated files)
         .stylesheet(dummy_css.as_bytes())?
         // Add a image cover file

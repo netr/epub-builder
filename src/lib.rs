@@ -172,6 +172,7 @@ pub use epub::EpubBuilder;
 pub use epub::EpubVersion;
 pub use epub::MetadataOpf;
 pub use epub::PageDirection;
+pub use epub::Series;
 // Accessibility types
 pub use epub::AccessMode;
 pub use epub::AccessibilityFeature;

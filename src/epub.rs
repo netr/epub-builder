@@ -253,6 +253,30 @@ pub struct AccessibilityMetadata {
     pub accessibility_summary: Option<String>,
 }
 
+/// Series information for EPUB books that are part of a series
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Series {
+    /// Name of the series
+    pub name: String,
+    /// Position/number of this book in the series
+    pub book_number: u32,
+}
+
+impl Series {
+    /// Create a new series
+    ///
+    /// # Arguments
+    ///
+    /// * `name`: the name of the series, e.g. "A Riley Thomas Mystery"
+    /// * `book_number`: the position of this book in the series, e.g. 2
+    pub fn new<S: Into<String>>(name: S, book_number: u32) -> Self {
+        Self {
+            name: name.into(),
+            book_number,
+        }
+    }
+}
+
 impl AccessibilityMetadata {
     /// Creates a new AccessibilityMetadata with default values for a typical EPUB
     pub fn new() -> Self {
@@ -299,6 +323,8 @@ pub struct Metadata {
     pub lacuna_target_platform: Option<String>,
     /// Accessibility metadata for the EPUB
     pub accessibility_metadata: AccessibilityMetadata,
+    /// Series information for the EPUB
+    pub series: Option<Series>,
 }
 
 impl Default for Metadata {
@@ -321,6 +347,7 @@ impl Default for Metadata {
             lacuna_version: None,
             lacuna_target_platform: Some("Generic".to_string()),
             accessibility_metadata: AccessibilityMetadata::new(),
+            series: None,
         }
     }
 }
@@ -572,6 +599,17 @@ impl<Z: Zip> EpubBuilder<Z> {
     /// Sets Accessibility metadata for the EPUB
     pub fn accessibility_metadata(&mut self, metadata: AccessibilityMetadata) -> Result<&mut Self> {
         self.set_accessibility_metadata(metadata);
+        Ok(self)
+    }
+
+    /// Set series metadata for the EPUB
+    pub fn set_series(&mut self, series: Series) {
+        self.metadata.series = Some(series);
+    }
+
+    /// Sets series metadata for the EPUB
+    pub fn series(&mut self, series: Series) -> Result<&mut Self> {
+        self.set_series(series);
         Ok(self)
     }
 
@@ -956,6 +994,37 @@ impl<Z: Zip> EpubBuilder<Z> {
                 "<meta name=\"schema:accessibilitySummary\" content=\"{}\"/>",
                 common::encode_html(summary, self.escape_html),
             ));
+        }
+
+        // Add series metadata
+        if let Some(ref series) = self.metadata.series {
+            match self.version {
+                EpubVersion::V30 => {
+                    // EPUB 3.0 uses property-based metadata with refinements
+                    optional.push(format!(
+                        "<meta property=\"belongs-to-collection\" id=\"id-1\">{}</meta>",
+                        common::encode_html(&series.name, self.escape_html),
+                    ));
+                    optional.push(
+                        "<meta refines=\"#id-1\" property=\"collection-type\">series</meta>".to_string(),
+                    );
+                    optional.push(format!(
+                        "<meta refines=\"#id-1\" property=\"group-position\">{}</meta>",
+                        series.book_number,
+                    ));
+                }
+                EpubVersion::V20 => {
+                    // EPUB 2.0 uses name/content attributes for basic series support
+                    optional.push(format!(
+                        "<meta name=\"series\" content=\"{}\"/>",
+                        common::encode_html(&series.name, self.escape_html),
+                    ));
+                    optional.push(format!(
+                        "<meta name=\"series-position\" content=\"{}\"/>",
+                        series.book_number,
+                    ));
+                }
+            }
         }
 
         let date_modified = self
