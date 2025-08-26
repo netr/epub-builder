@@ -15,10 +15,6 @@
     <meta property="ibooks:version">1.0.0</meta>
     <meta property="ibooks:specified-fonts">true</meta>
     <meta property="rendition:layout">reflowable</meta>
-    <meta property="rendition:spread">none</meta>
-    <meta property="rendition:orientation">auto</meta>
-    <meta property="ibooks:iphone-orientation-lock">none</meta>
-    <meta property="ibooks:ipad-orientation-lock">none</meta>
   </metadata>
   <manifest>
     <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
