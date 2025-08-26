@@ -522,7 +522,7 @@ impl<Z: Zip> EpubBuilder<Z> {
                 if value.is_empty() {
                     self.metadata.isbn = None;
                 } else {
-                    self.metadata.isbn = Some(value);
+                    self.metadata.isbn = Some(value.replace('-', ""));
                 }
             }
             "description" => {
