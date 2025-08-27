@@ -998,31 +998,34 @@ impl<Z: Zip> EpubBuilder<Z> {
 
         // Add series metadata
         if let Some(ref series) = self.metadata.series {
-            match self.version {
-                EpubVersion::V30 => {
-                    // EPUB 3.0 uses property-based metadata with refinements
-                    optional.push(format!(
-                        "<meta property=\"belongs-to-collection\" id=\"id-1\">{}</meta>",
-                        common::encode_html(&series.name, self.escape_html),
-                    ));
-                    optional.push(
-                        "<meta refines=\"#id-1\" property=\"collection-type\">series</meta>".to_string(),
-                    );
-                    optional.push(format!(
-                        "<meta refines=\"#id-1\" property=\"group-position\">{}</meta>",
-                        series.book_number,
-                    ));
-                }
-                EpubVersion::V20 => {
-                    // EPUB 2.0 uses name/content attributes for basic series support
-                    optional.push(format!(
-                        "<meta name=\"series\" content=\"{}\"/>",
-                        common::encode_html(&series.name, self.escape_html),
-                    ));
-                    optional.push(format!(
-                        "<meta name=\"series-position\" content=\"{}\"/>",
-                        series.book_number,
-                    ));
+            if !series.name.is_empty() {
+                match self.version {
+                    EpubVersion::V30 => {
+                        // EPUB 3.0 uses property-based metadata with refinements
+                        optional.push(format!(
+                            "<meta property=\"belongs-to-collection\" id=\"id-1\">{}</meta>",
+                            common::encode_html(&series.name, self.escape_html),
+                        ));
+                        optional.push(
+                            "<meta refines=\"#id-1\" property=\"collection-type\">series</meta>"
+                                .to_string(),
+                        );
+                        optional.push(format!(
+                            "<meta refines=\"#id-1\" property=\"group-position\">{}</meta>",
+                            series.book_number,
+                        ));
+                    }
+                    EpubVersion::V20 => {
+                        // EPUB 2.0 uses name/content attributes for basic series support
+                        optional.push(format!(
+                            "<meta name=\"series\" content=\"{}\"/>",
+                            common::encode_html(&series.name, self.escape_html),
+                        ));
+                        optional.push(format!(
+                            "<meta name=\"series-position\" content=\"{}\"/>",
+                            series.book_number,
+                        ));
+                    }
                 }
             }
         }

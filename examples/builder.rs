@@ -47,7 +47,7 @@ fn run() -> Result<()> {
         .metadata("lacuna_target_platform", "Kindle")? // Set the Lacuna target
         .metadata("generator", "epub-builder example")?
         // Set series information
-        .series(Series::new("A Riley Thomas Mystery", 2))?
+        // .series(Series::new("A Riley Thomas Mystery", 2))?
         // Set the stylesheet (create a "stylesheet.css" file in EPUB that is used by some generated files)
         .stylesheet(dummy_css.as_bytes())?
         // Add a image cover file
