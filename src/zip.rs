@@ -14,7 +14,7 @@ use crate::Result;
 /// `ZipLibrary` (uses the [Rust zip library](https://crates.io/crates/zip)).
 pub trait Zip {
     /// Write the source content to a file in the archive
-    fn write_file<P: AsRef<Path>, R: Read>(&mut self, file: P, content: R) -> Result<()>;
+    fn write_file<P: AsRef<Path>, R: Read>(&mut self, file: P, content: R, mime_type: Option<&str>) -> Result<()>;
 
     /// Generate the ZIP file
     fn generate<W: Write>(self, _: W) -> Result<()>;

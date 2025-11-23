@@ -435,10 +435,11 @@ impl<Z: Zip> EpubBuilder<Z> {
         };
 
         epub.zip
-            .write_file("META-INF/container.xml", templates::CONTAINER)?;
+            .write_file("META-INF/container.xml", templates::CONTAINER, None)?;
         epub.zip.write_file(
             "META-INF/com.apple.ibooks.display-options.xml",
             templates::IBOOKS,
+            None,
         )?;
 
         Ok(epub)
@@ -752,8 +753,9 @@ impl<Z: Zip> EpubBuilder<Z> {
         P: AsRef<Path>,
         S: Into<String>,
     {
+        let mime_type = mime_type.into();
         self.zip
-            .write_file(Path::new("OEBPS").join(path.as_ref()), content)?;
+            .write_file(Path::new("OEBPS").join(path.as_ref()), content, Some(&mime_type))?;
         log::debug!("Add resource: {:?}", path.as_ref().display());
         self.files.push(Content::new(
             format!("{}", path.as_ref().display()),
@@ -800,8 +802,9 @@ impl<Z: Zip> EpubBuilder<Z> {
         S: Into<String>,
         I: Into<String>,
     {
+        let mime_type = mime_type.into();
         self.zip
-            .write_file(Path::new("OEBPS").join(path.as_ref()), content)?;
+            .write_file(Path::new("OEBPS").join(path.as_ref()), content, Some(&mime_type))?;
         log::debug!("Add resource with ID: {:?}", path.as_ref().display());
         let mut file = Content::new(format!("{}", path.as_ref().display()), mime_type);
         file.id = Some(id.into());
@@ -825,8 +828,9 @@ impl<Z: Zip> EpubBuilder<Z> {
         P: AsRef<Path>,
         S: Into<String>,
     {
+        let mime_type = mime_type.into();
         self.zip
-            .write_file(Path::new("OEBPS").join(path.as_ref()), content)?;
+            .write_file(Path::new("OEBPS").join(path.as_ref()), content, Some(&mime_type))?;
         let mut file = Content::new(format!("{}", path.as_ref().display()), mime_type);
         file.cover = true;
         self.files.push(file);
@@ -877,6 +881,7 @@ impl<Z: Zip> EpubBuilder<Z> {
         self.zip.write_file(
             Path::new("OEBPS").join(content.toc.url.as_str()),
             content.content,
+            None,
         )?;
         let mut file = Content::new(content.toc.url.as_str(), "application/xhtml+xml");
         file.itemref = true;
@@ -911,14 +916,14 @@ impl<Z: Zip> EpubBuilder<Z> {
         // }
         // Render content.opf
         let bytes = self.render_opf()?;
-        self.zip.write_file("OEBPS/content.opf", &*bytes)?;
+        self.zip.write_file("OEBPS/content.opf", &*bytes, None)?;
         // Render toc.ncx
         let bytes = self.render_toc()?;
-        self.zip.write_file("OEBPS/toc.ncx", &*bytes)?;
+        self.zip.write_file("OEBPS/toc.ncx", &*bytes, None)?;
         // Render nav.xhtml
         if self.version >= EpubVersion::V30 {
             let bytes = self.render_nav(true)?;
-            self.zip.write_file("OEBPS/nav.xhtml", &*bytes)?;
+            self.zip.write_file("OEBPS/nav.xhtml", &*bytes, None)?;
         }
         // // Write inline toc if it needs to
         // if self.inline_toc {

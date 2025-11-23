@@ -12,6 +12,7 @@ use std::io::Write;
 use std::path::Path;
 
 use crate::Result;
+use libzip::write::SimpleFileOptions;
 use libzip::CompressionMethod;
 use libzip::ZipWriter;
 
@@ -55,14 +56,46 @@ impl ZipLibrary {
     }
 }
 
+fn compression_options_for(path: &Path) -> SimpleFileOptions {
+    const STORED_EXTENSIONS: &[&str] = &[
+        "png", "jpg", "jpeg", "gif", "webp", "avif", "heic", "heif", "bmp", "tif", "tiff", "svgz",
+        "mp3", "m4a", "ogg", "opus", "mp4", "m4v", "mov", "webm", "zip", "gz", "tgz", "bz2",
+        "xz", "zstd", "pdf",
+    ];
+
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|s| s.to_ascii_lowercase());
+
+    let store_file = ext
+        .as_deref()
+        .is_some_and(|ext| STORED_EXTENSIONS.contains(&ext));
+
+    if store_file {
+        SimpleFileOptions::default().compression_method(CompressionMethod::Stored)
+    } else {
+        // Use a fast deflate level for text/content while avoiding costly recompression of large assets.
+        SimpleFileOptions::default()
+            .compression_method(CompressionMethod::Deflated)
+            .compression_level(Some(1))
+    }
+}
+
 impl Zip for ZipLibrary {
-    fn write_file<P: AsRef<Path>, R: Read>(&mut self, path: P, mut content: R) -> Result<()> {
-        let mut file = format!("{}", path.as_ref().display());
+    fn write_file<P: AsRef<Path>, R: Read>(&mut self, path: P, mut content: R, mime_type: Option<&str>) -> Result<()> {
+        let path = path.as_ref();
+        let mut file = format!("{}", path.display());
         if cfg!(target_os = "windows") {
             // Path names should not use backspaces in zip files
             file = file.replace('\\', "/");
         }
-        let options = libzip::write::SimpleFileOptions::default();
+        let mut options = compression_options_for(path);
+        if let Some(mime) = mime_type {
+            if mime.starts_with("image/") || mime.starts_with("audio/") || mime.starts_with("video/") {
+                options = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
+            }
+        }
         self.writer.start_file(file.clone(), options).map_err(|e| {
             crate::Error::ZipErrorWithMessage {
                 msg: format!("could not create file '{}' in epub", file),

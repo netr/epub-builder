@@ -15,6 +15,13 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
+const STORE_SUFFIXES: &str = concat!(
+    ".png:.PNG:.jpg:.JPG:.jpeg:.JPEG:.gif:.GIF:.webp:.WEBP:.avif:.AVIF:.heic:.HEIC:.heif:.HEIF:",
+    ".bmp:.BMP:.tif:.TIF:.tiff:.TIFF:.svgz:.SVGZ:.mp3:.MP3:.m4a:.M4A:.ogg:.OGG:.opus:.OPUS:",
+    ".mp4:.MP4:.m4v:.M4V:.mov:.MOV:.webm:.WEBM:.zip:.ZIP:.gz:.GZ:.tgz:.TGZ:.bz2:.BZ2:.xz:.XZ:",
+    ".zst:.ZST:.pdf:.PDF"
+);
+
 /// Zip files using the system `zip` command.
 ///
 /// Create a temporary directory, write temp files in that directory, and then
@@ -126,7 +133,7 @@ impl ZipCommand {
 }
 
 impl Zip for ZipCommand {
-    fn write_file<P: AsRef<Path>, R: Read>(&mut self, path: P, content: R) -> Result<()> {
+    fn write_file<P: AsRef<Path>, R: Read>(&mut self, path: P, content: R, _mime_type: Option<&str>) -> Result<()> {
         let path = path.as_ref();
         if path.starts_with("..") || path.is_absolute() {
             return Err(crate::Error::InvalidPath(format!(
@@ -167,7 +174,10 @@ impl Zip for ZipCommand {
         let mut command = Command::new(&self.command);
         command
             .current_dir(self.temp_dir.path())
-            .arg("-9")
+            // Fast compression while avoiding useless work on already-compressed assets.
+            .arg("-1")
+            .arg("-n")
+            .arg(STORE_SUFFIXES)
             .arg("output.epub");
         for file in &self.files {
             command.arg(format!("{}", file.display()));
