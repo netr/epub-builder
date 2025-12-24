@@ -4,7 +4,6 @@ use epub_builder::EpubContent;
 use epub_builder::EpubVersion;
 use epub_builder::ReferenceType;
 use epub_builder::Result;
-use epub_builder::Series;
 use epub_builder::TocElement;
 use epub_builder::ZipLibrary;
 

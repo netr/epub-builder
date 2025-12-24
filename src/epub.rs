@@ -396,12 +396,13 @@ impl Content {
 /// ```
 /// use epub_builder::EpubBuilder;
 /// use epub_builder::ZipCommand;
+/// use epub_builder::Author;
 /// use std::io;
 ///
 /// // "Empty" EPUB file
 /// let mut builder = EpubBuilder::new(ZipCommand::new().unwrap()).unwrap();
 /// builder.metadata("title", "Empty EPUB").unwrap();
-/// builder.metadata("author", "Ann 'Onymous").unwrap();
+/// builder.add_author(Author::new("Ann O'Nymous", "O'Nymous, Ann")).unwrap();
 /// builder.generate(&mut io::stdout()).unwrap();
 /// ```
 #[derive(Debug)]
@@ -770,7 +771,7 @@ impl<Z: Zip> EpubBuilder<Z> {
     /// # Examples
     ///
     /// ```
-    /// # use epub_builder::{EpubBuilder, ZipLibrary};
+    /// # use epub_builder::{EpubBuilder, ZipLibrary, MetadataOpf};
     /// # let mut builder = EpubBuilder::new(ZipLibrary::new().unwrap()).unwrap();
     /// // Add a cover image with a specific ID
     /// builder.add_resource_with_id("images/cover.jpg",
@@ -778,7 +779,10 @@ impl<Z: Zip> EpubBuilder<Z> {
     ///                               "image/jpeg",
     ///                               "cover-image").unwrap();
     /// // Then add the metadata to reference it
-    /// builder.custom_opf_metadata("cover", "cover-image").unwrap();
+    /// builder.add_metadata_opf(MetadataOpf {
+    ///     name: String::from("cover"),
+    ///     content: String::from("cover-image"),
+    /// });
     /// ```
     ///
     /// # Arguments
