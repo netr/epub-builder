@@ -1,0 +1,32 @@
+[package]
+name = "epub-builder-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+arbitrary = { version = "1", features = ["derive"] }
+quick-xml = "0.37"
+zip = "7"
+
+[dependencies.epub-builder]
+path = ".."
+features = ["zip-library"]
+
+[[bin]]
+name = "metadata_fuzz"
+path = "fuzz_targets/metadata_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "toc_fuzz"
+path = "fuzz_targets/toc_fuzz.rs"
+test = false
+doc = false
+bench = false

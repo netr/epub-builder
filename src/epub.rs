@@ -959,8 +959,8 @@ impl<Z: Zip> EpubBuilder<Z> {
         for meta in &self.meta_opf {
             optional.push(format!(
                 "<meta name=\"{}\" content=\"{}\"/>",
-                common::encode_html(&meta.name, self.escape_html),
-                common::encode_html(&meta.content, self.escape_html),
+                html_escape::encode_double_quoted_attribute(&meta.name),
+                html_escape::encode_double_quoted_attribute(&meta.content),
             ));
         }
 
@@ -996,7 +996,7 @@ impl<Z: Zip> EpubBuilder<Z> {
         if let Some(ref summary) = self.metadata.accessibility_metadata.accessibility_summary {
             optional.push(format!(
                 "<meta name=\"schema:accessibilitySummary\" content=\"{}\"/>",
-                common::encode_html(summary, self.escape_html),
+                html_escape::encode_double_quoted_attribute(summary),
             ));
         }
 
@@ -1023,7 +1023,7 @@ impl<Z: Zip> EpubBuilder<Z> {
                         // EPUB 2.0 uses name/content attributes for basic series support
                         optional.push(format!(
                             "<meta name=\"series\" content=\"{}\"/>",
-                            common::encode_html(&series.name, self.escape_html),
+                            html_escape::encode_double_quoted_attribute(&series.name),
                         ));
                         optional.push(format!(
                             "<meta name=\"series-position\" content=\"{}\"/>",
@@ -1336,4 +1336,146 @@ fn is_id_char(c: char) -> bool {
 // generate an id compatible string, replacing all none ID chars to underscores
 fn to_id(s: &str) -> String {
     "id_".to_string() + &s.replace(|c: char| !is_id_char(c), "_")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ZipLibrary;
+
+    /// Helper to extract content.opf from generated EPUB and validate XML
+    fn validate_epub_xml(epub_bytes: &[u8]) -> Result<()> {
+        use std::io::Read;
+
+        let cursor = std::io::Cursor::new(epub_bytes);
+        let mut archive = libzip::ZipArchive::new(cursor).unwrap();
+
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i).unwrap();
+            if file.name().ends_with("content.opf") {
+                let mut contents = Vec::new();
+                file.read_to_end(&mut contents).unwrap();
+
+                // Try to parse as XML
+                let mut reader = quick_xml::Reader::from_reader(contents.as_slice());
+                let mut buf = Vec::new();
+                loop {
+                    match reader.read_event_into(&mut buf) {
+                        Ok(quick_xml::events::Event::Eof) => break,
+                        Err(e) => {
+                            let opf_str = String::from_utf8_lossy(&contents);
+                            panic!(
+                                "XML parse error at position {}: {:?}\n\nGenerated OPF:\n{}",
+                                reader.buffer_position(),
+                                e,
+                                opf_str
+                            );
+                        }
+                        _ => {}
+                    }
+                    buf.clear();
+                }
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_accessibility_summary_with_quotes() {
+        // This test reproduces the bug found by fuzzing:
+        // accessibility_summary containing double quotes breaks XML
+        let mut output = Vec::new();
+
+        let mut builder = EpubBuilder::new(ZipLibrary::new().unwrap()).unwrap();
+        builder.set_title("Test Book");
+
+        // Set accessibility summary with exact input from fuzzer crash: &"&&\0
+        let mut access = AccessibilityMetadata::new();
+        access.accessibility_summary = Some("&\"&&\0".to_string());
+        builder.set_accessibility_metadata(access);
+
+        // Add minimal content
+        let content = r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>Test</title></head>
+<body><p>Test</p></body>
+</html>"#;
+
+        builder
+            .add_content(
+                crate::EpubContent::new("chapter1.xhtml", content.as_bytes())
+                    .title("Chapter 1")
+                    .reftype(crate::ReferenceType::Text),
+            )
+            .unwrap();
+
+        builder.generate(&mut output).unwrap();
+
+        // This will panic if XML is invalid
+        validate_epub_xml(&output).unwrap();
+    }
+
+    #[test]
+    fn test_custom_meta_with_quotes() {
+        // Test that custom OPF metadata with quotes is properly escaped
+        let mut output = Vec::new();
+
+        let mut builder = EpubBuilder::new(ZipLibrary::new().unwrap()).unwrap();
+        builder.set_title("Test Book");
+
+        // Add custom meta with double quotes in name and content
+        builder.add_metadata_opf(MetadataOpf {
+            name: r#"test"name"#.to_string(),
+            content: r#"test"content"#.to_string(),
+        });
+
+        let content = r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>Test</title></head>
+<body><p>Test</p></body>
+</html>"#;
+
+        builder
+            .add_content(
+                crate::EpubContent::new("chapter1.xhtml", content.as_bytes())
+                    .title("Chapter 1")
+                    .reftype(crate::ReferenceType::Text),
+            )
+            .unwrap();
+
+        builder.generate(&mut output).unwrap();
+
+        validate_epub_xml(&output).unwrap();
+    }
+
+    #[test]
+    fn test_series_name_with_quotes() {
+        // Test that series name with quotes is properly escaped
+        let mut output = Vec::new();
+
+        let mut builder = EpubBuilder::new(ZipLibrary::new().unwrap()).unwrap();
+        builder.set_title("Test Book");
+        builder.set_series(Series::new(r#"The "Best" Series"#, 1));
+
+        let content = r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>Test</title></head>
+<body><p>Test</p></body>
+</html>"#;
+
+        builder
+            .add_content(
+                crate::EpubContent::new("chapter1.xhtml", content.as_bytes())
+                    .title("Chapter 1")
+                    .reftype(crate::ReferenceType::Text),
+            )
+            .unwrap();
+
+        builder.generate(&mut output).unwrap();
+
+        validate_epub_xml(&output).unwrap();
+    }
 }

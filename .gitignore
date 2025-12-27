@@ -7,3 +7,7 @@
 Cargo.lock
 
 *.epub
+
+fuzz/artifacts/
+fuzz/target
+fuzz/corpus/
