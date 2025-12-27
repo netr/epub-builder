@@ -1141,7 +1141,11 @@ impl<Z: Zip> EpubBuilder<Z> {
                 let author = upon::value! {
                     id_attr: html_escape::encode_double_quoted_attribute(&i.to_string()),
                     name: common::encode_html(author.name.as_str(), self.escape_html),
-                    name_last_first: common::encode_html(author.name_last_first.as_str(), self.escape_html)
+                    // Use encode_double_quoted_attribute for name_last_first because it's used
+                    // in the opf:file-as="..." attribute in EPUB 2.0 template.
+                    // encode_html only escapes <, >, & but NOT quotes, which breaks XML attributes.
+                    // Fixes: https://armorfi.sentry.io/issues/7096895254 (LACUNA-RS-50)
+                    name_last_first: html_escape::encode_double_quoted_attribute(author.name_last_first.as_str())
                 };
                 authors.push(author);
             }
