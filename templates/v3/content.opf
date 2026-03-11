@@ -9,7 +9,7 @@
     <dc:identifier id="isbn-id">urn:isbn:{{isbn}}</dc:identifier>
     <meta refines="#isbn-id" property="identifier-type" scheme="onix:codelist5">15</meta>{% endif %}
     <dc:language>{{lang}}</dc:language>{% if author %}{% for a in author %}
-    <dc:creator id="creator">{{a.name}}</dc:creator>
+    <dc:creator id="creator-{{ loop.index }}">{{a.name}}</dc:creator>
     {% endfor %}{% endif %}
 {{optional}}
     <meta property="dcterms:modified">{{date_modified}}</meta>

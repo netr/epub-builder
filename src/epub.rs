@@ -1451,6 +1451,95 @@ mod tests {
     }
 
     #[test]
+    fn test_multiple_authors_unique_creator_ids() {
+        use std::io::Read;
+
+        let mut output = Vec::new();
+
+        let mut builder = EpubBuilder::new(ZipLibrary::new().unwrap()).unwrap();
+        builder.epub_version(EpubVersion::V30);
+        builder.set_title("Test Book");
+        builder
+            .add_author(Author::new("Author One", "One, Author"))
+            .unwrap();
+        builder
+            .add_author(Author::new("Author Two", "Two, Author"))
+            .unwrap();
+        builder
+            .add_author(Author::new("Author Three", "Three, Author"))
+            .unwrap();
+
+        let content = r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>Test</title></head>
+<body><p>Test</p></body>
+</html>"#;
+
+        builder
+            .add_content(
+                crate::EpubContent::new("chapter1.xhtml", content.as_bytes())
+                    .title("Chapter 1")
+                    .reftype(crate::ReferenceType::Text),
+            )
+            .unwrap();
+
+        builder.generate(&mut output).unwrap();
+
+        // Extract content.opf and check for unique creator IDs
+        let cursor = std::io::Cursor::new(&output);
+        let mut archive = libzip::ZipArchive::new(cursor).unwrap();
+
+        let mut found_opf = false;
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i).unwrap();
+            if file.name().ends_with("content.opf") {
+                found_opf = true;
+                let mut contents = String::new();
+                file.read_to_string(&mut contents).unwrap();
+
+                // Collect all id attribute values from dc:creator elements
+                let mut creator_ids: Vec<String> = Vec::new();
+                for line in contents.lines() {
+                    let trimmed = line.trim();
+                    if trimmed.contains("<dc:creator") {
+                        if let Some(id_start) = trimmed.find("id=\"") {
+                            let after_id = &trimmed[id_start + 4..];
+                            if let Some(id_end) = after_id.find('"') {
+                                creator_ids.push(after_id[..id_end].to_string());
+                            }
+                        }
+                    }
+                }
+
+                assert_eq!(
+                    creator_ids.len(),
+                    3,
+                    "Expected 3 dc:creator elements, found {}: {:?}\n\nOPF:\n{}",
+                    creator_ids.len(),
+                    creator_ids,
+                    contents
+                );
+
+                // Verify all IDs are unique
+                let mut unique_ids = creator_ids.clone();
+                unique_ids.sort();
+                unique_ids.dedup();
+                assert_eq!(
+                    unique_ids.len(),
+                    creator_ids.len(),
+                    "dc:creator IDs are not unique: {:?}\n\nOPF:\n{}",
+                    creator_ids,
+                    contents
+                );
+
+                break;
+            }
+        }
+        assert!(found_opf, "content.opf not found in EPUB archive");
+    }
+
+    #[test]
     fn test_series_name_with_quotes() {
         // Test that series name with quotes is properly escaped
         let mut output = Vec::new();
