@@ -964,40 +964,48 @@ impl<Z: Zip> EpubBuilder<Z> {
             ));
         }
 
-        // Add accessibility metadata
+        // Add accessibility metadata. EPUB 3 requires the `property` form
+        // (`<meta property="schema:accessMode">textual</meta>`); the legacy
+        // `name`/`content` attribute form is EPUB 2 only and is not recognized
+        // by accessibility checkers (DAISY Ace) on EPUB 3 publications.
+        let is_v3 = self.version >= EpubVersion::V30;
+        let escape_html = self.escape_html;
+        let schema_meta = |property: &str, value: &str| -> String {
+            let escaped = common::encode_html(value, escape_html);
+            if is_v3 {
+                format!("<meta property=\"{property}\">{escaped}</meta>")
+            } else {
+                format!("<meta name=\"{property}\" content=\"{escaped}\"/>")
+            }
+        };
+
         for access_mode in &self.metadata.accessibility_metadata.access_modes {
-            optional.push(format!(
-                "<meta name=\"schema:accessMode\" content=\"{}\"/>",
-                common::encode_html(&access_mode.to_string(), self.escape_html),
-            ));
+            optional.push(schema_meta("schema:accessMode", &access_mode.to_string()));
         }
 
         for hazard in &self.metadata.accessibility_metadata.accessibility_hazards {
-            optional.push(format!(
-                "<meta name=\"schema:accessibilityHazard\" content=\"{}\"/>",
-                common::encode_html(&hazard.to_string(), self.escape_html),
+            optional.push(schema_meta(
+                "schema:accessibilityHazard",
+                &hazard.to_string(),
             ));
         }
 
         for sufficient in &self.metadata.accessibility_metadata.access_mode_sufficient {
-            optional.push(format!(
-                "<meta name=\"schema:accessModeSufficient\" content=\"{}\"/>",
-                common::encode_html(&sufficient.to_string(), self.escape_html),
+            optional.push(schema_meta(
+                "schema:accessModeSufficient",
+                &sufficient.to_string(),
             ));
         }
 
         for feature in &self.metadata.accessibility_metadata.accessibility_features {
-            optional.push(format!(
-                "<meta name=\"schema:accessibilityFeature\" content=\"{}\"/>",
-                common::encode_html(&feature.to_string(), self.escape_html),
+            optional.push(schema_meta(
+                "schema:accessibilityFeature",
+                &feature.to_string(),
             ));
         }
 
         if let Some(ref summary) = self.metadata.accessibility_metadata.accessibility_summary {
-            optional.push(format!(
-                "<meta name=\"schema:accessibilitySummary\" content=\"{}\"/>",
-                html_escape::encode_double_quoted_attribute(summary),
-            ));
+            optional.push(schema_meta("schema:accessibilitySummary", summary));
         }
 
         // Add series metadata
